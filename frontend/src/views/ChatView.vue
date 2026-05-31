@@ -103,6 +103,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
         <router-link v-if="authStore.user" to="/profile" class="user-badge">
           <span class="user-avatar">{{ authStore.user.username[0].toUpperCase() }}</span>
           <span class="user-name">{{ authStore.user.username }}</span>
+          <span class="user-role-badge" :class="'role-'+authStore.user.role">{{ authStore.user.role }}</span>
         </router-link>
         <button class="btn-logout" @click="handleLogout">{{ t('sidebar.logout') }}</button>
       </div>
@@ -189,6 +190,11 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 .user-badge:hover { background: var(--bg-raised); }
 .user-avatar { width: 26px; height: 26px; border-radius: 5px; background: var(--bg-raised); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: var(--text-secondary); }
 .user-name { font-size: 12px; color: var(--text-secondary); }
+.user-role-badge { font-size: 9px; font-weight: 600; padding: 1px 6px; border-radius: 3px; letter-spacing: 0.04em; }
+.role-superadmin { background: rgba(168,85,247,0.15); color: #a855f7; }
+.role-admin { background: rgba(59,158,255,0.15); color: #3b9eff; }
+.role-operator { background: rgba(229,160,32,0.15); color: #e5a020; }
+.role-viewer { background: rgba(78,91,110,0.15); color: #7c8b9e; }
 .btn-logout { background: none; border: none; color: var(--text-muted); font-size: 11px; cursor: pointer; transition: color 0.2s; letter-spacing: 0.03em; white-space: nowrap; }
 .btn-logout:hover { color: var(--red); }
 

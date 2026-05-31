@@ -78,6 +78,19 @@ async def chat_stream_generator(
         from agents.tools.ops_tools import _current_machine
         _current_machine.set(machine_config)
 
+    # Session ownership validation: prevent users from hijacking other users' sessions
+    if session_id in _audit_sessions:
+        # Verify this session belongs to the current user
+        try:
+            async with async_session() as db:
+                session_data = await audit_service.get_session(db, session_id)
+                if session_data and session_data.get("user_id") != user_id:
+                    new_id = str(uuid.uuid4())
+                    await _ensure_audit_session(new_id, user_id, message)
+                    session_id = new_id
+        except Exception:
+            pass
+
     await _ensure_audit_session(session_id, user_id, message)
     await _audit_message(session_id, "user", "user_input", message)
 

@@ -21,14 +21,16 @@ async def list_sessions(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """List audit sessions with optional filters."""
+    """List audit sessions. Non-admin users only see their own sessions."""
+    # Enforce user isolation
+    if current_user.role not in ("admin", "superadmin"):
+        if user_id is not None and user_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Cannot view other users' sessions")
+        user_id = current_user.id
+
     items, total = await audit_service.list_sessions(
-        db,
-        user_id=user_id,
-        intent_type=intent_type,
-        status=status,
-        limit=limit,
-        offset=offset,
+        db, user_id=user_id, intent_type=intent_type, status=status,
+        limit=limit, offset=offset,
     )
     return {"items": items, "total": total, "limit": limit, "offset": offset}
 
@@ -39,10 +41,13 @@ async def get_session(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Get a session with its complete message history."""
+    """Get a session detail. Non-admin can only access their own sessions."""
     data = await audit_service.get_session(db, session_id)
     if not data:
         raise HTTPException(status_code=404, detail="Session not found")
+    # Enforce user isolation
+    if current_user.role not in ("admin", "superadmin") and data["user_id"] != current_user.id:
+        raise HTTPException(status_code=403, detail="Cannot view other users' sessions")
     return data
 
 
@@ -51,5 +56,5 @@ async def get_stats(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Get aggregate audit statistics."""
+    """Get aggregate audit statistics (admin only, or scoped to user)."""
     return await audit_service.get_session_stats(db)

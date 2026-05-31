@@ -1,9 +1,11 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useAuthStore } from '../stores/auth'
 import api from '../api'
 
 const { t } = useI18n()
+const authStore = useAuthStore()
 const emit = defineEmits(['select'])
 
 const sessions = ref([])
@@ -12,7 +14,10 @@ const loading = ref(false)
 async function fetchSessions() {
   loading.value = true
   try {
-    const { data } = await api.get('/audit/sessions', { params: { limit: 20 } })
+    const params = { limit: 20 }
+    // Non-admin users can only see their own sessions (enforced by backend)
+    // Admin+ see all by default
+    const { data } = await api.get('/audit/sessions', { params })
     sessions.value = data.items || []
   } catch (e) { /* pass */ }
   finally { loading.value = false }

@@ -102,8 +102,8 @@ function handleLogout() { authStore.logout(); router.push('/login') }
             <td>{{ u.email || '-' }}</td>
             <td><span class="status-dot" :class="u.status === 'active' ? 'dot-on' : 'dot-off'"></span> {{ u.status }}</td>
             <td class="actions-cell">
-              <button class="btn-sm" @click="startEdit(u)">{{ t('users.edit') }}</button>
-              <button class="btn-sm btn-del" @click="handleDelete(u.id)" v-if="u.id !== authStore.user?.id">{{ t('users.delete') }}</button>
+              <button class="btn-sm" @click="startEdit(u)" :disabled="u.role==='superadmin' && authStore.user?.role!=='superadmin'">{{ t('users.edit') }}</button>
+              <button class="btn-sm btn-del" @click="handleDelete(u.id)" v-if="authStore.user?.role === 'superadmin' && u.id !== authStore.user?.id">{{ t('users.delete') }}</button>
             </td>
           </tr>
         </tbody>
