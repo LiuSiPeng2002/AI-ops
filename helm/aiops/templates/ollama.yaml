@@ -1,0 +1,71 @@
+{{- if .Values.ollama.enabled }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "aiops.ollama.name" . }}
+  labels:
+    app.kubernetes.io/component: ollama
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: {{ .Values.ollama.persistence.size }}
+{{- if .Values.global.storageClass }}
+  storageClassName: {{ .Values.global.storageClass }}
+{{- end }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "aiops.ollama.name" . }}
+  labels:
+    app.kubernetes.io/component: ollama
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aiops-ollama
+  template:
+    metadata:
+      labels:
+        app: aiops-ollama
+    spec:
+      containers:
+        - name: ollama
+          image: {{ .Values.ollama.image.repository }}:{{ .Values.ollama.image.tag }}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 11434
+              name: http
+          resources:
+            {{- toYaml .Values.ollama.resources | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /root/.ollama
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 11434
+            initialDelaySeconds: 60
+            periodSeconds: 30
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "aiops.ollama.name" . }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "aiops.ollama.name" . }}
+  labels:
+    app.kubernetes.io/component: ollama
+spec:
+  type: ClusterIP
+  ports:
+    - port: 11434
+      targetPort: 11434
+      name: http
+  selector:
+    app: aiops-ollama
+{{- end }}

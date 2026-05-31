@@ -1,0 +1,14 @@
+apiVersion: v2
+name: aiops
+description: AI-Ops Platform — Multi-Agent Self-Healing System for Kubernetes
+type: application
+version: 2.0.0
+appVersion: "2.0.0"
+keywords:
+  - aiops
+  - kubernetes
+  - langgraph
+  - multi-agent
+  - self-healing
+maintainers:
+  - name: AI-Ops Team

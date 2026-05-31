@@ -1,0 +1,125 @@
+version: "3.9"
+
+services:
+  # ============================================================
+  # MySQL 8.0 — audit, sessions, user data
+  # ============================================================
+  mysql:
+    image: mysql:8.0
+    container_name: aiops-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-aiops_root_2026}
+      MYSQL_DATABASE: aiops
+      MYSQL_USER: aiops
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-aiops_pass_2026}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./backend/database/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - aiops-net
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-authentication-plugin=caching_sha2_password
+
+  # ============================================================
+  # Ollama — local LLM + embedding models
+  # ============================================================
+  ollama:
+    image: ollama/ollama:latest
+    container_name: aiops-ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - aiops-net
+    # Pull embedding model on first start
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        ollama serve &
+        sleep 5
+        ollama pull qwen3-embedding:0.6b 2>/dev/null || true
+        wait
+
+  # ============================================================
+  # AI-Ops Backend — FastAPI + LangGraph
+  # ============================================================
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: aiops-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      # Database
+      DATABASE_URL: mysql+aiomysql://aiops:${MYSQL_PASSWORD:-aiops_pass_2026}@mysql:3306/aiops
+      # LLM (DeepSeek — set your own key)
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-sk-your-key-here}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.deepseek.com/v1}
+      MODEL_NAME: ${MODEL_NAME:-deepseek-chat}
+      # Embedding (Ollama local)
+      EMBEDDING_API_KEY: ollama
+      EMBEDDING_BASE_URL: http://ollama:11434/v1
+      EMBEDDING_MODEL: qwen3-embedding:0.6b
+      # K8s / Linux remote access
+      K8S_MASTER_HOST: ${K8S_MASTER_HOST:-}
+      K8S_MASTER_USER: ${K8S_MASTER_USER:-}
+      K8S_MASTER_PASSWORD: ${K8S_MASTER_PASSWORD:-}
+      # JWT
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change-me-in-production}
+      # DingTalk
+      DINGTALK_ENABLED: ${DINGTALK_ENABLED:-false}
+      DINGTALK_WEBHOOK_URL: ${DINGTALK_WEBHOOK_URL:-}
+      DINGTALK_SECRET: ${DINGTALK_SECRET:-}
+    volumes:
+      - chroma_data:/app/chroma_data
+    depends_on:
+      mysql:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+    networks:
+      - aiops-net
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  # ============================================================
+  # AI-Ops Frontend — Vue 3 + nginx
+  # ============================================================
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: aiops-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+    depends_on:
+      - backend
+    networks:
+      - aiops-net
+
+networks:
+  aiops-net:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  ollama_data:
+  chroma_data:

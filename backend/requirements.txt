@@ -1,0 +1,13 @@
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+sqlalchemy[asyncio]==2.0.36
+aiomysql==0.2.0
+pydantic-settings==2.7.1
+python-jose[cryptography]==3.3.0
+bcrypt==5.0.0
+langchain==0.3.14
+langgraph==0.2.61
+langchain-openai==0.3.1
+sse-starlette==2.2.1
+paramiko==3.5.0
+chromadb==0.5.23

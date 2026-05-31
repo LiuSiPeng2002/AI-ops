@@ -1,0 +1,110 @@
+# ============================================================
+# AI-Ops Platform Helm Chart — Default Values
+# ============================================================
+
+global:
+  imageRegistry: ""
+  storageClass: ""
+
+# --- Backend ---
+backend:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: aiops-backend
+    tag: "2.0"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8000
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+  env:
+    DATABASE_URL: "mysql+aiomysql://aiops:aiops_pass_2026@aiops-mysql:3306/aiops"
+    OPENAI_API_KEY: "sk-your-key-here"
+    OPENAI_BASE_URL: "https://api.deepseek.com/v1"
+    MODEL_NAME: "deepseek-chat"
+    EMBEDDING_API_KEY: "ollama"
+    EMBEDDING_BASE_URL: "http://aiops-ollama:11434/v1"
+    EMBEDDING_MODEL: "qwen3-embedding:0.6b"
+    JWT_SECRET_KEY: "change-me-in-production"
+    DINGTALK_ENABLED: "false"
+    K8S_MASTER_HOST: ""
+    K8S_MASTER_USER: ""
+    K8S_MASTER_PASSWORD: ""
+  persistence:
+    enabled: true
+    size: 10Gi
+    mountPath: /app/chroma_data
+
+# --- Frontend ---
+frontend:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: aiops-frontend
+    tag: "2.0"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 80
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+# --- MySQL ---
+mysql:
+  enabled: true
+  image:
+    repository: mysql
+    tag: "8.0"
+  auth:
+    rootPassword: "aiops_root_2026"
+    database: "aiops"
+    username: "aiops"
+    password: "aiops_pass_2026"
+  persistence:
+    enabled: true
+    size: 20Gi
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+# --- Ollama (for embeddings) ---
+ollama:
+  enabled: true
+  image:
+    repository: ollama/ollama
+    tag: "latest"
+  persistence:
+    enabled: true
+    size: 30Gi
+  resources:
+    requests:
+      cpu: 500m
+      memory: 2Gi
+    limits:
+      cpu: 4000m
+      memory: 8Gi
+
+# --- Ingress ---
+ingress:
+  enabled: false
+  className: "nginx"
+  host: aiops.example.com
+  tls:
+    enabled: false
+    secretName: aiops-tls

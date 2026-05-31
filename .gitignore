@@ -1,0 +1,110 @@
+# === Secrets & API Keys ===
+.env
+*.env
+!backend/.env.example
+*.pem
+*.key
+*-secret.yaml
+secrets/
+credentials/
+backend/kube_config 2>/dev/null
+
+# === Python ===
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+*.manifest
+*.spec
+venv/
+.venv/
+env/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# === Node / Frontend ===
+node_modules/
+frontend/dist/
+.npm/
+.eslintcache
+*.tsbuildinfo
+
+# === ChromaDB (vector store data) ===
+backend/chroma_data/
+
+# === Database / Volumes ===
+mysql_data/
+*.db
+*.sqlite
+*.sqlite3
+
+# === Docker ===
+docker-compose.override.yml
+*.tar
+*.tar.gz
+!backend/requirements.txt
+
+# === IDE & Editors ===
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# === OS ===
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# === Logs ===
+*.log
+logs/
+/log/
+/tmp/
+
+# === Runtime ===
+*.pid
+*.seed
+*.pid.lock
+
+# === Coverage / Testing ===
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# === MyPy ===
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# === LangChain / AI ===
+.langsmith*
+langsmith*
+
+# === Temporary ===
+*.tmp
+*.temp
+*.bak
+*.swp
+*~.nib

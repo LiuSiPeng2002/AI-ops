@@ -1,0 +1,103 @@
+{{- if .Values.backend.enabled }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "aiops.backend.name" . }}-chroma
+  labels:
+    app.kubernetes.io/component: backend
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: {{ .Values.backend.persistence.size }}
+{{- if .Values.global.storageClass }}
+  storageClassName: {{ .Values.global.storageClass }}
+{{- end }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "aiops.backend.name" . }}
+  labels:
+    app.kubernetes.io/name: aiops
+    app.kubernetes.io/component: backend
+spec:
+  replicas: {{ .Values.backend.replicaCount }}
+  selector:
+    matchLabels:
+      app: aiops-backend
+  template:
+    metadata:
+      labels:
+        app: aiops-backend
+    spec:
+      containers:
+        - name: backend
+          image: {{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}
+          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+          ports:
+            - containerPort: 8000
+              name: http
+          env:
+            - name: DATABASE_URL
+              value: {{ .Values.backend.env.DATABASE_URL | quote }}
+            - name: OPENAI_API_KEY
+              value: {{ .Values.backend.env.OPENAI_API_KEY | quote }}
+            - name: OPENAI_BASE_URL
+              value: {{ .Values.backend.env.OPENAI_BASE_URL | quote }}
+            - name: MODEL_NAME
+              value: {{ .Values.backend.env.MODEL_NAME | quote }}
+            - name: EMBEDDING_API_KEY
+              value: {{ .Values.backend.env.EMBEDDING_API_KEY | quote }}
+            - name: EMBEDDING_BASE_URL
+              value: {{ .Values.backend.env.EMBEDDING_BASE_URL | quote }}
+            - name: EMBEDDING_MODEL
+              value: {{ .Values.backend.env.EMBEDDING_MODEL | quote }}
+            - name: JWT_SECRET_KEY
+              value: {{ .Values.backend.env.JWT_SECRET_KEY | quote }}
+            - name: DINGTALK_ENABLED
+              value: {{ .Values.backend.env.DINGTALK_ENABLED | quote }}
+            - name: K8S_MASTER_HOST
+              value: {{ .Values.backend.env.K8S_MASTER_HOST | quote }}
+            - name: K8S_MASTER_USER
+              value: {{ .Values.backend.env.K8S_MASTER_USER | quote }}
+            - name: K8S_MASTER_PASSWORD
+              value: {{ .Values.backend.env.K8S_MASTER_PASSWORD | quote }}
+          resources:
+            {{- toYaml .Values.backend.resources | nindent 12 }}
+          volumeMounts:
+            - name: chroma-data
+              mountPath: {{ .Values.backend.persistence.mountPath }}
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+      volumes:
+        - name: chroma-data
+          persistentVolumeClaim:
+            claimName: {{ include "aiops.backend.name" . }}-chroma
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "aiops.backend.name" . }}
+  labels:
+    app.kubernetes.io/component: backend
+spec:
+  type: {{ .Values.backend.service.type }}
+  ports:
+    - port: {{ .Values.backend.service.port }}
+      targetPort: 8000
+      name: http
+  selector:
+    app: aiops-backend
+{{- end }}

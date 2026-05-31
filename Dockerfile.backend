@@ -1,0 +1,27 @@
+FROM python:3.11-slim
+
+LABEL app="aiops-backend"
+LABEL version="2.0"
+
+# System dependencies for building wheels (bcrypt, mysqlclient)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    libc-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Install Python dependencies
+COPY backend/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application source
+COPY backend/ .
+
+# Create directory for ChromaDB persistent storage
+RUN mkdir -p /app/chroma_data
+
+EXPOSE 8000
+
+# Run with uvicorn (no reload in production)
+CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
